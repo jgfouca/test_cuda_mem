@@ -13,42 +13,49 @@
     } while (0)
 
 void printCudaMemoryInfo() {
-    size_t free_mem = 0;
-    size_t total_mem = 0;
-    CHECK_CUDA(cudaMemGetInfo(&free_mem, &total_mem));
-    std::cout << "Free memory: " << free_mem / (1024 * 1024) << " MB" << std::endl;
-    std::cout << "Total memory: " << total_mem / (1024 * 1024) << " MB" << std::endl;
+  size_t free_mem = 0;
+  size_t total_mem = 0;
+  CHECK_CUDA(cudaMemGetInfo(&free_mem, &total_mem));
+  std::cout << "Total memory: " << total_mem / (1024 * 1024) << ", Free memory: " << free_mem / (1024 * 1024) << " MB" << std::endl;
 }
 
-void testCudaMallocLimits() {
-    size_t size = 1024 * 1024 * 1024; // Start with 1 GB
-    float* d_ptr = nullptr;
+void testCudaMallocLimits(bool verbose) {
+  size_t size = 1024 * 1024 * 1024; // Start with 1 GB
+  float* d_ptr = nullptr;
 
-    while (true) {
-        cudaError_t err = cudaMalloc((void**)&d_ptr, size);
-        if (err == cudaSuccess) {
-            std::cout << "cudaMalloc succeeded for size: " << size / (1024 * 1024) << " MB" << std::endl;
-            CHECK_CUDA(cudaFree(d_ptr));
-            size += 1024 * 1024 * 1024; // Increase by 1 GB
-        } else {
-            std::cerr << "cudaMalloc failed for size: " << size / (1024 * 1024) << " MB" << std::endl;
-            std::cerr << "Error: " << cudaGetErrorString(err) << std::endl;
-            break;
-        }
+  while (true) {
+    // Print CUDA memory info before allocation
+    cudaError_t err = cudaMalloc((void**)&d_ptr, size);
+    if (err == cudaSuccess) {
+      if (verbose) {
+        std::cout << "CUDA memory info after allocation:" << std::endl;
+        printCudaMemoryInfo();
+      }
+      std::cout << "cudaMalloc succeeded for size: " << size / (1024 * 1024) << " MB" << std::endl;
+      if (verbose) {
+        std::cout << "cudaFree" << std::endl;
+      }
+      CHECK_CUDA(cudaFree(d_ptr));
+      size += 1024 * 1024 * 1024; // Increase by 1 GB
+      // Print CUDA memory info after allocation
+      if (verbose) {
+        std::cout << "CUDA memory info after deallocation:" << std::endl;
+        printCudaMemoryInfo();
+      }
+    } else {
+      std::cerr << "cudaMalloc failed for size: " << size / (1024 * 1024) << " MB" << std::endl;
+      std::cerr << "Error: " << cudaGetErrorString(err) << std::endl;
+      break;
     }
+  }
 }
 
 int main() {
-    // Print CUDA memory info before allocation
-    std::cout << "CUDA memory info before allocation:" << std::endl;
-    printCudaMemoryInfo();
+  std::cout << "CUDA memory info before any allocation:" << std::endl;
+  printCudaMemoryInfo();
 
-    // Test CUDA malloc limits
-    testCudaMallocLimits();
+  // Test CUDA malloc limits
+  testCudaMallocLimits(false);
 
-    // Print CUDA memory info after allocation
-    std::cout << "CUDA memory info after allocation:" << std::endl;
-    printCudaMemoryInfo();
-
-    return 0;
+  return 0;
 }
