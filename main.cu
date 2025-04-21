@@ -50,12 +50,43 @@ void testCudaMallocLimits(bool verbose) {
   }
 }
 
+void testCudaMallocLimitsChunked(bool verbose) {
+  size_t gb_size = 1024 * 1024 * 1024;
+  size_t gb = 1;
+  float* d_ptr = nullptr;
+
+  while (true) {
+    // Print CUDA memory info before allocation
+    cudaError_t err = cudaMalloc((void**)&d_ptr, gb_size);
+    if (err == cudaSuccess) {
+      if (verbose) {
+        std::cout << "CUDA memory info after allocation:" << std::endl;
+        printCudaMemoryInfo();
+      }
+      std::cout << "cudaMalloc succeeded for 1 GB, " << gb << " allocated so far" << std::endl;
+      if (verbose) {
+        std::cout << "cudaFree" << std::endl;
+      }
+      // Print CUDA memory info after allocation
+      if (verbose) {
+        std::cout << "CUDA memory info after deallocation:" << std::endl;
+        printCudaMemoryInfo();
+      }
+      ++gb;
+    } else {
+      std::cerr << "cudaMalloc failed for gb: " << gb << std::endl;
+      std::cerr << "Error: " << cudaGetErrorString(err) << std::endl;
+      break;
+    }
+  }
+}
 int main() {
   std::cout << "CUDA memory info before any allocation:" << std::endl;
   printCudaMemoryInfo();
 
   // Test CUDA malloc limits
-  testCudaMallocLimits(false);
+  //testCudaMallocLimits(false);
+  testCudaMallocLimitsChunked(false);
 
   return 0;
 }
